@@ -50,7 +50,7 @@ public class ServerHealthChecker {
 	}
 	
 	private PollingUpdateHandler[] createHandlers() {
-		return null;
+		return new PollingUpdateHandler[]{new CSVUpdateHandler()};
 	}
 	
 	private void start(InetAddress[] addresses) {

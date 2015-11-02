@@ -6,7 +6,7 @@ import com.cloudian.analytics.PollingStatus.Status;
 
 public abstract class PollingJob extends Thread{
 	
-	final PollingStatus status = new PollingStatus();
+	final PollingStatus pollingStatus = new PollingStatus();
 	final PollingStrategy strategy;
 	final InetAddress host;
 	
@@ -34,7 +34,7 @@ public abstract class PollingJob extends Thread{
 	protected void started() {
 		
 		// update status object
-		this.status.updateStatus(Status.STARTED, null);
+		this.pollingStatus.updateStatus(Status.STARTED, null);
 		
 		// notify
 		this.strategy.updateStatus(this);
@@ -44,7 +44,7 @@ public abstract class PollingJob extends Thread{
 	protected void finished() {
 		
 		// update status object
-		this.status.updateStatus(Status.FINISHED, null);
+		this.pollingStatus.updateStatus(Status.FINISHED, null);
 		
 		// notify
 		this.strategy.updateStatus(this);
@@ -54,7 +54,7 @@ public abstract class PollingJob extends Thread{
 	protected void failed(String error) {
 		
 		// update status object
-		this.status.updateStatus(Status.ERROR, error);
+		this.pollingStatus.updateStatus(Status.ERROR, error);
 		
 		// notify
 		this.strategy.updateStatus(this);
@@ -66,7 +66,7 @@ public abstract class PollingJob extends Thread{
 		StringBuffer sb = new StringBuffer();
 		sb.append("jobTarget: " + this.host.getHostName());
 		sb.append(", ");
-		sb.append(this.status.toString());
+		sb.append(this.pollingStatus.toString());
 		return sb.toString();
 	}
 

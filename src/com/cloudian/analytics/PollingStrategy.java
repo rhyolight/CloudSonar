@@ -46,7 +46,7 @@ public abstract class PollingStrategy {
 		
 		logger.debug("updating status: " + job);
 		
-		if (job.status.isStopped()) {
+		if (job.pollingStatus.isStopped()) {
 			// remove from the map
 			this.pollingJobMap.remove(job.host);
 		}
