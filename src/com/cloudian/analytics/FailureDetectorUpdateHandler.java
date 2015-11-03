@@ -22,9 +22,7 @@ import java.text.DecimalFormat;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,71 +34,69 @@ import com.cloudian.analytics.PollingStatus.Status;
 public class FailureDetectorUpdateHandler implements PollingUpdateHandler {
 	
 	private static final Logger logger = LogManager.getLogger(FailureDetectorUpdateHandler.class);
-	
 	private static final int SAMPLE_SIZE = 1000;
+	private static final DecimalFormat format = new DecimalFormat("#.##");
 	
 	private final Map<InetAddress, ArrivalWindow> arrivalSamples = new Hashtable<InetAddress, ArrivalWindow>();
 	
-	private static final ScheduledExecutorService failureDetectionService = Executors.newSingleThreadScheduledExecutor();
-	
-	private static final DecimalFormat format = new DecimalFormat("#.###");
-	
 	public FailureDetectorUpdateHandler() {
-		// default constructor
+		// default constructor	
+	}
+	
+	public long getMean(InetAddress address) {
 		
-		failureDetectionService.scheduleAtFixedRate(new Runnable() {
-
-			@Override
-			public void run() {
-				
-				for (InetAddress address : arrivalSamples.keySet()) {
-					
-					ArrivalWindow window = arrivalSamples.get(address);
-					
-					if (window == null) {
-						return;
-					}
-					
-					// compute phi
-					long tnow = System.nanoTime();
-					long current = tnow - window.tLast;
-					double phi = ArrivalWindow.PHI_FACTOR * window.phi(tnow);
-					
-					// output
-					StringBuffer sb = new StringBuffer();
-					sb.append(address.getHostName());
-					sb.append(CSVUpdateHandler.DELIM);
-					sb.append(current);
-					sb.append(CSVUpdateHandler.DELIM);
-					sb.append(format.format(phi));
-					logger.info(sb.toString());
-					
-				}
-				
-			}
-			
-		}, 2, 1, TimeUnit.SECONDS);
+		ArrivalWindow window = this.arrivalSamples.get(address);
+		
+		if (window == null) {
+			return 0;
+		}
+		
+		long meanInNano = Double.valueOf(window.mean()).longValue();
+		return TimeUnit.MILLISECONDS.convert(meanInNano, TimeUnit.NANOSECONDS);
 		
 	}
 
 	@Override
 	public void updateStatus(PollingJob job) {
 		
-		if (!job.pollingStatus.isStopped() || job.pollingStatus.status.equals(Status.ERROR)) {
+		if (job.pollingStatus.status.equals(Status.ERROR)) {
+			// do nothing for now
 			return;
 		}
 		
-		long now = System.nanoTime();
 		ArrivalWindow heartbeatWindow = this.arrivalSamples.get(job.host);
 		if (heartbeatWindow == null) {
 			
 			heartbeatWindow = new ArrivalWindow(SAMPLE_SIZE);
-            heartbeatWindow.add(now);
+            heartbeatWindow.add(job.pollingStatus.duration());
             arrivalSamples.put(job.host, heartbeatWindow);
 			
 		} else {
 			
-			heartbeatWindow.add(now);
+			double phi = 0.0;
+			long duration = 0;
+			
+			if (!job.pollingStatus.isStopped()) {
+				// compute phi
+				duration = System.nanoTime() - job.pollingStatus.started;
+				phi = ArrivalWindow.PHI_FACTOR * heartbeatWindow.phi(duration);
+			} else {
+				// compute phi
+				duration = job.pollingStatus.duration();
+				phi = ArrivalWindow.PHI_FACTOR * heartbeatWindow.phi(duration);
+				// done
+				heartbeatWindow.add(job.pollingStatus.duration());
+			}
+			
+			StringBuffer sb = new StringBuffer();
+			sb.append(job.host.getHostName());
+			sb.append(CSVUpdateHandler.DELIM);
+			sb.append(job.pollingStatus.status);
+			sb.append(CSVUpdateHandler.DELIM);
+			sb.append(duration);
+			sb.append(CSVUpdateHandler.DELIM);
+			sb.append(this.format.format(phi));
+			logger.info(sb.toString());
 			
 		}
 		
@@ -110,7 +106,6 @@ public class FailureDetectorUpdateHandler implements PollingUpdateHandler {
 class ArrivalWindow
 {
 	private static final Logger logger = LogManager.getLogger(ArrivalWindow.class);
-    long tLast = 0L;
     private final BoundedStatsDeque arrivalIntervals;
 
     // this is useless except to provide backwards compatibility in phi_convict_threshold,
@@ -132,26 +127,7 @@ class ArrivalWindow
 
     synchronized void add(long value)
     {
-        assert tLast >= 0;
-        if (tLast > 0L)
-        {
-            long interArrivalTime = (value - tLast);
-            /*
-            if (interArrivalTime <= MAX_INTERVAL_IN_NANO)
-                arrivalIntervals.add(interArrivalTime);
-            else
-                logger.debug("Ignoring interval time of {}", interArrivalTime);
-                */
-            arrivalIntervals.add(interArrivalTime);
-        }
-        else
-        {
-            // We use a very large initial interval since the "right" average depends on the cluster size
-            // and it's better to err high (false negatives, which will be corrected by waiting a bit longer)
-            // than low (false positives, which cause "flapping").
-            arrivalIntervals.add(MAX_INTERVAL_IN_NANO);
-        }
-        tLast = value;
+        arrivalIntervals.add(value);
     }
 
     double mean()
@@ -160,11 +136,10 @@ class ArrivalWindow
     }
 
     // see CASSANDRA-2597 for an explanation of the math at work here.
-    double phi(long tnow)
+    double phi(long current)
     {
-        assert arrivalIntervals.size() > 0 && tLast > 0; // should not be called before any samples arrive
-        long t = tnow - tLast;
-        return t / mean();
+        assert arrivalIntervals.size() > 0; // should not be called before any samples arrive
+        return current / mean();
     }
 }
 

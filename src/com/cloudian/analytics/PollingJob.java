@@ -36,9 +36,6 @@ public abstract class PollingJob extends Thread{
 		// update status object
 		this.pollingStatus.updateStatus(Status.STARTED, null);
 		
-		// notify
-		this.strategy.updateStatus(this);
-		
 	}
 	
 	protected void finished() {
@@ -46,18 +43,12 @@ public abstract class PollingJob extends Thread{
 		// update status object
 		this.pollingStatus.updateStatus(Status.FINISHED, null);
 		
-		// notify
-		this.strategy.updateStatus(this);
-		
 	}
 	
 	protected void failed(String error) {
 		
 		// update status object
 		this.pollingStatus.updateStatus(Status.ERROR, error);
-		
-		// notify
-		this.strategy.updateStatus(this);
 		
 	}
 
