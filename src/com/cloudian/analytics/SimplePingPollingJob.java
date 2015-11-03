@@ -8,8 +8,6 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This is a simple PING job with InetAddress#isReacheable.
- * The problem is that a PING RTT is usually lower than 1 ms,
- * but isReacheable often has a delay about 1~2 ms.
  * 
  * # ping cloudian-node1
  * PING cloudian-node1 (10.100.204.225) 56(84) bytes of data.
@@ -47,6 +45,8 @@ public class SimplePingPollingJob extends PollingJob {
 				this.failed("unreacheable");
 				
 				logger.debug("PingPolling to " + this.host.getHostName() + " failed");
+				
+				return;
 				
 			}
 			
