@@ -11,9 +11,9 @@ public abstract class PollingStrategy {
 	
 	private static final Logger logger = LogManager.getLogger(PollingStrategy.class);
 	
-	private Map<InetAddress, PollingJob> pollingJobMap = new HashMap<InetAddress, PollingJob>(); 
+	final Map<InetAddress, PollingJob> pollingJobMap = new HashMap<InetAddress, PollingJob>(); 
 	
-	private final PollingUpdateHandler[] handlers;
+	private PollingUpdateHandler[] handlers;
 	
 	public PollingStrategy(PollingUpdateHandler[] handlers) {
 		this.handlers = handlers;

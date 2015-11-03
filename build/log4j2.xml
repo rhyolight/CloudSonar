@@ -26,6 +26,17 @@
       </Policies>
       <DefaultRolloverStrategy max="100"/>
     </RollingFile>
+    <RollingFile name="FD" fileName="logs/fd.csv"
+                 filePattern="logs/$${date:yyyy-MM}/fd-%d{MM-dd-yyyy}-%i.csv.gz">
+      <PatternLayout>
+        <Pattern>%d{ISO8601}, %m%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="100"/>
+    </RollingFile>
   </Appenders>
   <Loggers>
     <Root level="info">
@@ -34,6 +45,9 @@
     </Root>
     <Logger name="com.cloudian.analytics.CSVUpdateHandler" level="info" additivity="false">
       <AppenderRef ref="CSV"/>
+    </Logger>
+    <Logger name="com.cloudian.analytics.FailureDetectorUpdateHandler" level="info" additivity="false">
+      <AppenderRef ref="FD"/>
     </Logger>
     <Logger name="com.cloudian.analytics" level="debug" additivity="false">
       <AppenderRef ref="Console"/>

@@ -14,13 +14,13 @@ public class PollingStatus {
 	public void updateStatus(Status changed, String error) {
 		switch (changed) {
 		case STARTED:
-			started = System.currentTimeMillis();
+			started = System.nanoTime();
 			break;
 		case FINISHED:
-			stopped = System.currentTimeMillis();
+			stopped = System.nanoTime();
 			break;
 		case ERROR:
-			stopped = System.currentTimeMillis();
+			stopped = System.nanoTime();
 			if (error != null) {
 				this.error = error;
 			}

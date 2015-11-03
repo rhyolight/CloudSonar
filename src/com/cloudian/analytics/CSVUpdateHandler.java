@@ -8,7 +8,7 @@ import com.cloudian.analytics.PollingStatus.Status;
 public class CSVUpdateHandler implements PollingUpdateHandler {
 	
 	private static final Logger logger = LogManager.getLogger(CSVUpdateHandler.class);
-	private static final String DELIM = ", ";
+	static final String DELIM = ", ";
 	
 	public CSVUpdateHandler() {
 		// default constructor

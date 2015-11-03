@@ -24,7 +24,7 @@ public class ServerHealthChecker {
 	
 	private static final Logger logger = LogManager.getLogger(ServerHealthChecker.class);
 	
-	private static final long POLLING_INTERVAL_IN_SECONDS = 1;
+	static final long POLLING_INTERVAL_IN_SECONDS = 1;
 	
 	private final String[] hosts;
 	private PollingStrategy pollingStrategy;
@@ -50,7 +50,7 @@ public class ServerHealthChecker {
 	}
 	
 	private PollingUpdateHandler[] createHandlers() {
-		return new PollingUpdateHandler[]{new CSVUpdateHandler()};
+		return new PollingUpdateHandler[]{new CSVUpdateHandler(), new FailureDetectorUpdateHandler()};
 	}
 	
 	private void start(InetAddress[] addresses) {
