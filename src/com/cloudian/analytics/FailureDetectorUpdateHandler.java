@@ -35,7 +35,7 @@ public class FailureDetectorUpdateHandler implements PollingUpdateHandler {
 	
 	private static final Logger logger = LogManager.getLogger(FailureDetectorUpdateHandler.class);
 	private static final int SAMPLE_SIZE = 1000;
-	private static final DecimalFormat format = new DecimalFormat("#.##");
+	private static final DecimalFormat FORMAT = new DecimalFormat("#.##");
 	
 	private final Map<InetAddress, ArrivalWindow> arrivalSamples = new Hashtable<InetAddress, ArrivalWindow>();
 	
@@ -59,7 +59,7 @@ public class FailureDetectorUpdateHandler implements PollingUpdateHandler {
 	@Override
 	public void updateStatus(PollingJob job) {
 		
-		if (job.pollingStatus.status.equals(Status.ERROR)) {
+		if (job.pollingStatus.status.equals(Status.NOT_STARTED) || job.pollingStatus.status.equals(Status.ERROR)) {
 			// do nothing for now
 			return;
 		}
@@ -95,7 +95,7 @@ public class FailureDetectorUpdateHandler implements PollingUpdateHandler {
 			sb.append(CSVUpdateHandler.DELIM);
 			sb.append(duration);
 			sb.append(CSVUpdateHandler.DELIM);
-			sb.append(this.format.format(phi));
+			sb.append(FORMAT.format(phi));
 			logger.info(sb.toString());
 			
 		}
