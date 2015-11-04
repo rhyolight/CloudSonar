@@ -2,6 +2,7 @@ package com.cloudian.analytics;
 
 import java.net.InetAddress;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +33,8 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 	
 	static final Logger logger = LogManager.getLogger(HTMAnomalyDetector.class);
 	private static final String FULL_DATE = "YYYY/MM/dd HH:mm:ss";
-	static final DateFormat format = new SimpleDateFormat(FULL_DATE);
+	static final DateFormat FULL_DATE_FORMAT = new SimpleDateFormat(FULL_DATE);
+	static final DecimalFormat PREDICTION_FORMAT = new DecimalFormat("########");
 	static final String CLASSFIER_FIELD = "duration";
 	
 	private final Map<InetAddress, HTM> htmMaps = new HashMap<InetAddress, HTM>();
@@ -86,7 +88,7 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 		
 		StringBuffer sb = new StringBuffer();
 		
-		sb.append(format.format(new Date()));
+		sb.append(FULL_DATE_FORMAT.format(new Date()));
 		sb.append(CSVUpdateHandler.DELIM);
 		sb.append(TimeUnit.MICROSECONDS.convert(job.pollingStatus.duration(), TimeUnit.NANOSECONDS));
 		
@@ -224,14 +226,14 @@ class HTM extends Subscriber<Inference>{
 	@Override
 	public void onNext(Inference infer) {
 		
-        StringBuilder sb = new StringBuilder("host, record#, input, prediction, anomaly = ");
+        StringBuilder sb = new StringBuilder();
         sb.append(address.getHostName());
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getRecordNum());
         sb.append(CSVUpdateHandler.DELIM);
-        sb.append(infer.getClassifierInput().get(HTMAnomalyDetector.CLASSFIER_FIELD).get("inputValue"));
+        sb.append(HTMAnomalyDetector.PREDICTION_FORMAT.format(infer.getClassifierInput().get(HTMAnomalyDetector.CLASSFIER_FIELD).get("inputValue")));
         sb.append(CSVUpdateHandler.DELIM);
-        sb.append(infer.getClassification(HTMAnomalyDetector.CLASSFIER_FIELD).getMostProbableValue(1));
+        sb.append(HTMAnomalyDetector.PREDICTION_FORMAT.format(infer.getClassification(HTMAnomalyDetector.CLASSFIER_FIELD).getMostProbableValue(1)));
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getAnomalyScore());
         
