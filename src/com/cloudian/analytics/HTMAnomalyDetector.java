@@ -30,7 +30,7 @@ import rx.Subscriber;
 
 public class HTMAnomalyDetector implements PollingUpdateHandler {
 	
-	private static final Logger logger = LogManager.getLogger(HTMAnomalyDetector.class);
+	static final Logger logger = LogManager.getLogger(HTMAnomalyDetector.class);
 	private static final String FULL_DATE = "YYYY/MM/dd HH:mm:ss";
 	static final DateFormat format = new SimpleDateFormat(FULL_DATE);
 	static final String CLASSFIER_FIELD = "duration";
@@ -201,8 +201,6 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 
 class HTM extends Subscriber<Inference>{
 	
-	private static final Logger logger = LogManager.getLogger(HTM.class);
-	
 	final InetAddress address;
 	final Network network;
 	final Publisher publisher;
@@ -215,18 +213,20 @@ class HTM extends Subscriber<Inference>{
 
 	@Override
 	public void onCompleted() {
-		logger.debug("HTM Network completed");
+		HTMAnomalyDetector.logger.debug("HTM Network completed");
 	}
 
 	@Override
 	public void onError(Throwable error) {
-		logger.error("HTM Network threw an error!", error);
+		HTMAnomalyDetector.logger.error("HTM Network threw an error!", error);
 	}
 
 	@Override
 	public void onNext(Inference infer) {
 		
-        StringBuilder sb = new StringBuilder("record#, input, prediction, anomaly = ");
+        StringBuilder sb = new StringBuilder("host, record#, input, prediction, anomaly = ");
+        sb.append(address.getHostName());
+        sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getRecordNum());
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getClassifierInput().get(HTMAnomalyDetector.CLASSFIER_FIELD).get("inputValue"));
@@ -235,6 +235,6 @@ class HTM extends Subscriber<Inference>{
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getAnomalyScore());
         
-        logger.info(sb.toString());
+        HTMAnomalyDetector.logger.info(sb.toString());
 	}
 }

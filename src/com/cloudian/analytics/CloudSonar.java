@@ -52,7 +52,7 @@ public class CloudSonar {
 	}
 	
 	private PollingUpdateHandler[] createHandlers() {
-		return new PollingUpdateHandler[]{new CSVUpdateHandler(), new FailureDetectorUpdateHandler()};
+		return new PollingUpdateHandler[]{new CSVUpdateHandler(), new FailureDetectorUpdateHandler(), new HTMAnomalyDetector()};
 	}
 	
 	private void start(InetAddress[] addresses) {

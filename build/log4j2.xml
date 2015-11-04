@@ -4,8 +4,8 @@
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
     </Console>
-    <RollingFile name="RollingFile" fileName="logs/app.log"
-                 filePattern="logs/$${date:yyyy-MM}/app-%d{MM-dd-yyyy}-%i.log.gz">
+    <RollingFile name="RollingFile" fileName="logs/sonar.log"
+                 filePattern="logs/$${date:yyyy-MM}/sonar-%d{MM-dd-yyyy}-%i.log.gz">
       <PatternLayout>
         <Pattern>%d{ISO8601} %5p [%t] %c{1}:%M(%L) %m%n</Pattern>
       </PatternLayout>
@@ -15,8 +15,8 @@
       </Policies>
       <DefaultRolloverStrategy max="100"/>
     </RollingFile>
-    <RollingFile name="CSV" fileName="logs/app.csv"
-                 filePattern="logs/$${date:yyyy-MM}/app-%d{MM-dd-yyyy}-%i.csv.gz">
+    <RollingFile name="CSV" fileName="logs/sonar.csv"
+                 filePattern="logs/$${date:yyyy-MM}/sonar-%d{MM-dd-yyyy}-%i.csv.gz">
       <PatternLayout>
         <Pattern>%d{ISO8601}, %m%n</Pattern>
       </PatternLayout>
@@ -28,6 +28,17 @@
     </RollingFile>
     <RollingFile name="FD" fileName="logs/fd.csv"
                  filePattern="logs/$${date:yyyy-MM}/fd-%d{MM-dd-yyyy}-%i.csv.gz">
+      <PatternLayout>
+        <Pattern>%d{ISO8601}, %m%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="100"/>
+    </RollingFile>
+    <RollingFile name="HTM" fileName="logs/htm.csv"
+                 filePattern="logs/$${date:yyyy-MM}/htm-%d{MM-dd-yyyy}-%i.csv.gz">
       <PatternLayout>
         <Pattern>%d{ISO8601}, %m%n</Pattern>
       </PatternLayout>
@@ -51,6 +62,9 @@
     </Logger>
     <Logger name="com.cloudian.analytics" level="debug" additivity="false">
       <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="com.cloudian.analytics.HTMAnomalyDetector" level="info" additivity="false">
+      <AppenderRef ref="HTM"/>
     </Logger>
   </Loggers>
 </Configuration>

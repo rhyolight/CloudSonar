@@ -30,4 +30,4 @@ else
     JAVA=java
 fi
 
-exec "$JAVA" -cp .:./* com.cloudian.analytics.CloudSonar "$@"
+exec "$JAVA" -cp .:./*:./htm/* com.cloudian.analytics.CloudSonar "$@"
