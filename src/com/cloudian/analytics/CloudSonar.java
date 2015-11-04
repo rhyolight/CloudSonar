@@ -7,29 +7,31 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Server Health Checker keeps polling a given set of hosts,
- * and record their response times to detect their health statuses 
- * by analyzing their subtle differences.
+ * CloudSonar is a tool that you can use as a sonar in a cloud.
+ * This tool allows you to keep polling a given set of hosts,
+ * and record their response times to analyze their subtle changes over time.
  * 
- * A polling method(e.g. PING, HTTP HEAD) should be pluggable.
+ * A polling method(e.g. PING, HTTP HEAD) and update handlers are pluggable.
  * 
- * Also, the detection design is based on the following paper.
- * "The φ Accrual Failure Detector"
- * http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf
+ * SimplePingPollingStrategy is available as a default polling method.
+ * 
+ * The following two handlers are available by default.
+ * 1. CSVUpdateHandler
+ * 2. FailureDetectorUpdateHandler
  * 
  * @author tsato
  *
  */
-public class ServerHealthChecker {
+public class CloudSonar {
 	
-	private static final Logger logger = LogManager.getLogger(ServerHealthChecker.class);
+	private static final Logger logger = LogManager.getLogger(CloudSonar.class);
 	
 	static final long POLLING_INTERVAL_IN_SECONDS = 1;
 	
 	private final String[] hosts;
 	private PollingStrategy pollingStrategy;
 	
-	private ServerHealthChecker(String[] hosts) {
+	private CloudSonar(String[] hosts) {
 		
 		this.hosts = hosts;
 		
@@ -67,7 +69,7 @@ public class ServerHealthChecker {
 
 	public static void main(String[] args) {
 		
-		final ServerHealthChecker checker = new ServerHealthChecker(args);
+		final CloudSonar checker = new CloudSonar(args);
 		
 		InetAddress[] addresses = null;
 		try {

@@ -31,6 +31,18 @@ import org.apache.logging.log4j.Logger;
 
 import com.cloudian.analytics.PollingStatus.Status;
 
+/**
+ * The detection design is based on the following paper.
+ * "The φ Accrual Failure Detector"
+ * http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf
+ * 
+ * The following classes are from Apache Cassandra(2.0.11).
+ * ArrivalWindow is a modified version of org.apache.cassandra.gmt.FailureDetector#ArrivalWindow.
+ * BoundedStatsDeque is the same as org.apache.cassandra.util.BoundedStatsDeque.
+ * 
+ * @author tsato
+ *
+ */
 public class FailureDetectorUpdateHandler implements PollingUpdateHandler {
 	
 	private static final Logger logger = LogManager.getLogger(FailureDetectorUpdateHandler.class);
@@ -118,7 +130,7 @@ class ArrivalWindow
     // since if a host is regularly experiencing connectivity problems lasting this long we'd
     // rather mark it down quickly instead of adapting
     // this value defaults to the same initial value the FD is seeded with
-    static final long MAX_INTERVAL_IN_NANO = ServerHealthChecker.POLLING_INTERVAL_IN_SECONDS * 1000 * 1000 * 1000 * 2;
+    static final long MAX_INTERVAL_IN_NANO = CloudSonar.POLLING_INTERVAL_IN_SECONDS * 1000 * 1000 * 1000 * 2;
 
     ArrivalWindow(int size)
     {
