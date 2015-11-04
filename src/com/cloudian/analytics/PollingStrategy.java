@@ -49,7 +49,7 @@ public abstract class PollingStrategy {
 			return;
 		}
 		
-		PollingJob job = this.createPollingJob(this, host);
+		PollingJob job = this.createPollingJob(host);
 		pollingJobMap.put(host, job);
 		
 		PollingJobMonitor monitor = new PollingJobMonitor(this, job, Math.max(MINIMUM_MONITORING_INTERVAL, this.fdUpdateHandler.getMean(host)));
@@ -57,7 +57,7 @@ public abstract class PollingStrategy {
 		
 	};
 	
-	abstract PollingJob createPollingJob(PollingStrategy strategy, InetAddress host);
+	abstract PollingJob createPollingJob(InetAddress host);
 	
 	boolean updateStatus(PollingJob job) {
 		

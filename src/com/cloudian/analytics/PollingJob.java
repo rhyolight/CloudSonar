@@ -7,20 +7,16 @@ import com.cloudian.analytics.PollingStatus.Status;
 public abstract class PollingJob extends Thread{
 	
 	final PollingStatus pollingStatus = new PollingStatus();
-	final PollingStrategy strategy;
 	final InetAddress host;
 	
 	/*
 	 * disable to call the default constructor
 	 */
 	private PollingJob() {
-		this.strategy = null;
 		this.host = null;
 	};
 	
-	public PollingJob(PollingStrategy strategy, InetAddress host) {
-		// TODO: Set a meaningfull thread name here
-		this.strategy = strategy;
+	public PollingJob(InetAddress host) {
 		this.host = host;
 	}
 

@@ -9,8 +9,8 @@ public class SimplePingPollingStrategy extends PollingStrategy {
 	}
 
 	@Override
-	PollingJob createPollingJob(PollingStrategy strategy, InetAddress host) {
-		return new SimplePingPollingJob(strategy, host);
+	PollingJob createPollingJob(InetAddress host) {
+		return new SimplePingPollingJob(host);
 	}
 
 }

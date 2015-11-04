@@ -25,8 +25,8 @@ public class SimplePingPollingJob extends PollingJob {
 	
 	private static final int TIMEOUT = 10000;
 
-	public SimplePingPollingJob(PollingStrategy strategy, InetAddress host) {
-		super(strategy, host);
+	public SimplePingPollingJob(InetAddress host) {
+		super(host);
 	}
 
 	@Override
