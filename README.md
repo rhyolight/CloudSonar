@@ -60,10 +60,35 @@ The tool will produces the following logs in *logs* folder:
 * fd.csv    (timestamp, host name, status, PHI score)
 * htm.csv   (timestamp, host name, response time in micro seconds, prediction, anomaly score)
 
-## Technical Note
+## Technical Notes
+
+### PING implementation
 
 In Linux, PING uses a raw socket that is allowed only for a privileged user. In Java, no such a raw socket is available. But a convinient method is available as [InetAddress#isReacheable](https://docs.oracle.com/javase/8/docs/api/java/net/InetAddress.html#isReachable-int-). The JavaDoc says:
 
 > A typical implementation will use ICMP ECHO REQUESTs if the privilege can be obtained, otherwise it will try to establish a TCP connection on port 7 (Echo) of the destination host.
 
 Even if I write my own ICMP ECHO implementatoin in C, this privilege issue is not resolved. So I decided to use [InetAddress#isReacheable](https://docs.oracle.com/javase/8/docs/api/java/net/InetAddress.html#isReachable-int-).
+
+### Estimating the distribution of PING response times
+
+This is a sample distribution of PING response times I tried on my S3 object storage cluster. x is a response time in 100 micro seconds. y is the number of responses. 
+
+cloudian-node1 received all the S3 traffic generated on cloudian-node2. Also, I dropped ICMP puckets several times on cloudian-node2. They were shown on the longer latencies.
+
+But in overal, you can see the distribution is exponential.
+
+![](https://github.com/ggsato/CloudSonar/blob/master/resources/images/duration_distribution.PNG)
+
+In the original paper, the distribution of inter-arrival times was estimated as a normal distribution. While in Cassandra, it is implemented as an exponential one. Note that CloudSonar measures a response time, but both of the original paper and Cassandra did an inter arrival time.
+
+### PHI and response time
+
+Here's a sample of PHI values and response times. The Y on the left is PHI, and response time in 100 micro seconds is on the right. Around 22:30, response times got longer, and PHI showed large values by responding to the changes. A response time after that remained high, but Phi Failure Detector dropped as it has persisted.
+
+![](https://github.com/ggsato/CloudSonar/blob/master/resources/images/phi_and_duration.PNG)
+
+This is the distribution of PHI values. Most values are below 1.0.
+
+![](https://github.com/ggsato/CloudSonar/blob/master/resources/images/phi_distribution.PNG)
+
