@@ -33,7 +33,7 @@ And a temporal high load could occur during such a peak period. But, if a certai
 
 I think [HTM](https://en.wikipedia.org/wiki/Hierarchical_temporal_memory) is the best for such a temporal pattern recognition/prediction. Actually, HTM Challenge by [NuPIC](http://numenta.org) inspired me to try this.
 
-So, let HTM produce an anomaly score for a current wait time, then, when the following conditions are met, a node to node server health is considered bad:
+So, let HTM produce an anomaly score for a current wait time, then, when the following conditions are met, a node to node server health is considered **needs-attention**:
 
 1. HTM raises an anomaly score higher than a given threshold
 2. PHI score is higher than a given threshold
@@ -43,7 +43,7 @@ The condition 1 means an unexpected pattern was observed. And the condition 2 te
 ## Usage
 
 There is no installation required, but you need Java 8 to run this tool. If your server wide Java environment is not Java 8, then you can pass CLOUDSONAR_JAVA_HOME environmental variable.
-Then, simply upload the contants in a *build* folder to your prefereed location, and run the following commands:
+Then, simply upload the contents in a *build* folder to your prefereed location, and run the following commands:
 
 ```
 e.g. 
@@ -57,7 +57,7 @@ JAVA 8 is at /root/jdk1.8.0_65
 The tool will produces the following logs in *logs* folder:
 
 * sonar.csv (timestamp, host name, response time in nano seconds)
-* fd.csv    (timestamp, host name, status, PHI score)
+* fd.csv    (timestamp, host name, response time in nano seconds, status, PHI score)
 * htm.csv   (timestamp, host name, response time in micro seconds, prediction, anomaly score)
 
 ## Technical Notes
@@ -80,7 +80,9 @@ But in overal, you can see the distribution is exponential.
 
 ![](https://github.com/ggsato/CloudSonar/blob/master/resources/images/duration_distribution.PNG)
 
-In the original paper, the distribution of inter-arrival times was estimated as a normal distribution. While in Cassandra, it is implemented as an exponential one. Note that CloudSonar measures a response time, but both of the original paper and Cassandra did an inter arrival time.
+In the original paper, the distribution of inter-arrival times was estimated as a normal distribution. While in Cassandra, it is implemented as an exponential one. So I borrowed the implementation of Cassandra, and modified a little for it to accept a response time instead of an arrival time.
+
+Note that CloudSonar measures a response time, but both of the original paper and Cassandra did an inter arrival time.
 
 ### PHI and response time
 
@@ -88,7 +90,7 @@ Here's a sample of PHI values and response times. The Y on the left is PHI, and 
 
 ![](https://github.com/ggsato/CloudSonar/blob/master/resources/images/phi_and_duration.PNG)
 
-This is the distribution of PHI values. Most values are below 1.0.
+This is the distribution of PHI values. Most values are below 1.0, but spread wide.
 
 ![](https://github.com/ggsato/CloudSonar/blob/master/resources/images/phi_distribution.PNG)
 
