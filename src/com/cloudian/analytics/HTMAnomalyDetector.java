@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.numenta.nupic.Parameters;
 import org.numenta.nupic.Parameters.KEY;
 import org.numenta.nupic.algorithms.Anomaly;
+import org.numenta.nupic.algorithms.SpatialPooler;
 import org.numenta.nupic.algorithms.TemporalMemory;
 import org.numenta.nupic.encoders.Encoder;
 import org.numenta.nupic.network.Inference;
@@ -34,7 +35,7 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 	static final Logger logger = LogManager.getLogger(HTMAnomalyDetector.class);
 	private static final String FULL_DATE = "YYYY/MM/dd HH:mm:ss";
 	static final DateFormat FULL_DATE_FORMAT = new SimpleDateFormat(FULL_DATE);
-	static final DecimalFormat PREDICTION_FORMAT = new DecimalFormat("########");
+	static final DecimalFormat LOG_FORMAT = new DecimalFormat("#.#");
 	static final String CLASSFIER_FIELD = "duration";
 	
 	private final Map<InetAddress, HTM> htmMaps = new HashMap<InetAddress, HTM>();
@@ -58,7 +59,7 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 			// create
 			Publisher publisher = Publisher.builder()
 										.addHeader("timestamp" + CSVUpdateHandler.DELIM + CLASSFIER_FIELD)
-										.addHeader("datetime" + CSVUpdateHandler.DELIM + "int")
+										.addHeader("datetime" + CSVUpdateHandler.DELIM + "float")
 										.addHeader("T" + CSVUpdateHandler.DELIM)
 										.build();
 			
@@ -90,10 +91,16 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 		
 		sb.append(FULL_DATE_FORMAT.format(new Date()));
 		sb.append(CSVUpdateHandler.DELIM);
-		sb.append(TimeUnit.MICROSECONDS.convert(job.pollingStatus.duration(), TimeUnit.NANOSECONDS));
+		sb.append(LOG_FORMAT.format(toLog100(job.pollingStatus.duration())));
 		
 		return sb.toString();
 		
+	}
+	
+	private static float toLog100(long value) {
+		double log100 = Math.log(value) / Math.log(100);
+		logger.debug("log100(" + value + ") = " + log100);
+		return Double.valueOf(log100).floatValue();
 	}
 	
 	private static Network createNetwork(Sensor<ObservableSensor<String>> sensor) {
@@ -107,6 +114,7 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 	                    .alterParameter(KEY.AUTO_CLASSIFY, Boolean.TRUE)
 	                    .add(Anomaly.create())
 	                    .add(new TemporalMemory())
+	                    .add(new SpatialPooler())
 	                    .add(sensor)
 	                    )
 	                );
@@ -134,10 +142,10 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
                 "timestamp", "datetime", "DateEncoder");
         fieldEncodings = setupMap(
                 fieldEncodings, 
-                50, 
+                1024, 
                 21, 
-                0, 10000000, 0, 0.1, null, Boolean.TRUE, null, 
-                CLASSFIER_FIELD, "int", "ScalarEncoder");
+                0, 7, 0, 0.1, null, Boolean.TRUE, null, 
+                CLASSFIER_FIELD, "float", "ScalarEncoder");
         
         fieldEncodings.get("timestamp").put(KEY.DATEFIELD_DOFW.getFieldName(), new Tuple(1, 1.0)); // Day of week
         fieldEncodings.get("timestamp").put(KEY.DATEFIELD_TOFD.getFieldName(), new Tuple(5, 4.0)); // Time of day
@@ -231,9 +239,9 @@ class HTM extends Subscriber<Inference>{
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getRecordNum());
         sb.append(CSVUpdateHandler.DELIM);
-        sb.append(HTMAnomalyDetector.PREDICTION_FORMAT.format(infer.getClassifierInput().get(HTMAnomalyDetector.CLASSFIER_FIELD).get("inputValue")));
+        sb.append(HTMAnomalyDetector.LOG_FORMAT.format(infer.getClassifierInput().get(HTMAnomalyDetector.CLASSFIER_FIELD).get("inputValue")));
         sb.append(CSVUpdateHandler.DELIM);
-        sb.append(HTMAnomalyDetector.PREDICTION_FORMAT.format(infer.getClassification(HTMAnomalyDetector.CLASSFIER_FIELD).getMostProbableValue(1)));
+        sb.append(HTMAnomalyDetector.LOG_FORMAT.format(infer.getClassification(HTMAnomalyDetector.CLASSFIER_FIELD).getMostProbableValue(1)));
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getAnomalyScore());
         
