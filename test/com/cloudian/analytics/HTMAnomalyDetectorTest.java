@@ -13,7 +13,7 @@ public class HTMAnomalyDetectorTest {
 		HTMAnomalyDetector detector = new HTMAnomalyDetector();
 		InetAddress local = InetAddress.getLocalHost();
 		
-		for (int i=0; i<100; i++) {
+		for (int i=0; i<1000; i++) {
 			PollingJob job = new SimplePingPollingJob(local);
 			job.start();
 			

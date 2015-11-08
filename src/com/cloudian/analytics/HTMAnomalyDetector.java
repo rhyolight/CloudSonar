@@ -35,7 +35,7 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 	static final Logger logger = LogManager.getLogger(HTMAnomalyDetector.class);
 	private static final String FULL_DATE = "YYYY/MM/dd HH:mm:ss";
 	static final DateFormat FULL_DATE_FORMAT = new SimpleDateFormat(FULL_DATE);
-	static final DecimalFormat LOG_FORMAT = new DecimalFormat("#.#");
+	static final DecimalFormat LOG_FORMAT = new DecimalFormat("#.###");
 	static final String CLASSFIER_FIELD = "duration";
 	
 	private final Map<InetAddress, HTM> htmMaps = new HashMap<InetAddress, HTM>();
@@ -91,16 +91,20 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 		
 		sb.append(FULL_DATE_FORMAT.format(new Date()));
 		sb.append(CSVUpdateHandler.DELIM);
-		sb.append(LOG_FORMAT.format(toLog100(job.pollingStatus.duration())));
+		
+		// ~ 10 micro sec = {0.0, 1.0}
+		// ~ 100 micro sec = {1.0, 2.0}
+		// ~ 1 milli sec = {2.0, 3.0}
+		// ~ 10 milli sec = {3.0, 4.0}
+		// ~ 100 milli sec = {4.0, 5.0}
+		// ~ 1 sec = {5.0, 6.0}
+		// ~ 10 sec = {6.0, 7.0}
+		long micro = TimeUnit.MICROSECONDS.convert(job.pollingStatus.duration(), TimeUnit.NANOSECONDS);
+		float log10 = Double.valueOf(Math.log10(micro)).floatValue();
+		sb.append(log10);
 		
 		return sb.toString();
 		
-	}
-	
-	private static float toLog100(long value) {
-		double log100 = Math.log(value) / Math.log(100);
-		logger.debug("log100(" + value + ") = " + log100);
-		return Double.valueOf(log100).floatValue();
 	}
 	
 	private static Network createNetwork(Sensor<ObservableSensor<String>> sensor) {
@@ -114,7 +118,7 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 	                    .alterParameter(KEY.AUTO_CLASSIFY, Boolean.TRUE)
 	                    .add(Anomaly.create())
 	                    .add(new TemporalMemory())
-	                    .add(new SpatialPooler())
+	                    //.add(new SpatialPooler())
 	                    .add(sensor)
 	                    )
 	                );
@@ -142,12 +146,12 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
                 "timestamp", "datetime", "DateEncoder");
         fieldEncodings = setupMap(
                 fieldEncodings, 
-                1024, 
+                512, 
                 21, 
-                0, 7, 0, 0.1, null, Boolean.TRUE, null, 
+                0, 7, 1, 0.1, null, Boolean.TRUE, null, 
                 CLASSFIER_FIELD, "float", "ScalarEncoder");
         
-        fieldEncodings.get("timestamp").put(KEY.DATEFIELD_DOFW.getFieldName(), new Tuple(1, 1.0)); // Day of week
+        //fieldEncodings.get("timestamp").put(KEY.DATEFIELD_DOFW.getFieldName(), new Tuple(1, 1.0)); // Day of week
         fieldEncodings.get("timestamp").put(KEY.DATEFIELD_TOFD.getFieldName(), new Tuple(5, 4.0)); // Time of day
         fieldEncodings.get("timestamp").put(KEY.DATEFIELD_PATTERN.getFieldName(), FULL_DATE);
         
@@ -241,7 +245,8 @@ class HTM extends Subscriber<Inference>{
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(HTMAnomalyDetector.LOG_FORMAT.format(infer.getClassifierInput().get(HTMAnomalyDetector.CLASSFIER_FIELD).get("inputValue")));
         sb.append(CSVUpdateHandler.DELIM);
-        sb.append(HTMAnomalyDetector.LOG_FORMAT.format(infer.getClassification(HTMAnomalyDetector.CLASSFIER_FIELD).getMostProbableValue(1)));
+        Object pred = infer.getClassification(HTMAnomalyDetector.CLASSFIER_FIELD).getMostProbableValue(1);
+        sb.append(pred == null ? "N/A" : HTMAnomalyDetector.LOG_FORMAT.format(pred));
         sb.append(CSVUpdateHandler.DELIM);
         sb.append(infer.getAnomalyScore());
         
