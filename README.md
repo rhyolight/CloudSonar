@@ -17,7 +17,7 @@ This tool is the one you look for if the following problems apply to you:
 A PING response time contains the following information:
 
 1. a load on a sender server
-2. a netowrk congestion
+2. netowrk congestion
 3. a load on a recipient server
 4. any other noises
 
@@ -58,7 +58,7 @@ The tool will produces the following logs in *logs* folder:
 
 * sonar.csv (timestamp, host name, response time in nano seconds)
 * fd.csv    (timestamp, host name, response time in nano seconds, status, PHI score)
-* htm.csv   (timestamp, host name, response time in micro seconds, prediction, anomaly score)
+* htm.csv   (timestamp, host name, log10 of response time in micro seconds, prediction, anomaly score)
 
 ## Technical Notes
 
@@ -94,3 +94,19 @@ This is the distribution of PHI values. Most values are below 1.0, but spread wi
 
 ![](https://github.com/ggsato/CloudSonar/blob/master/resources/images/phi_distribution.PNG)
 
+### Response time format(HTM input)
+
+The format of response time is log10(response time in micro seconds). If a raw value of response time is directly used, a noise in a larger value has more significance. 
+
+response time | log10
+-------------:|-----:
+1 µ | 0
+10 µs | 1
+100 µs | 2
+1 ms | 3
+10 ms | 4
+100 ms | 5
+1 s | 6
+10 s | 7
+
+Thus, a practical range of log10 is from 2 to 7.
