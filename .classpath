@@ -8,12 +8,12 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="build/htm/chutils-1.4.jar"/>
 	<classpathentry kind="lib" path="build/htm/hamcrest-core-1.3.jar"/>
-	<classpathentry kind="lib" path="build/htm/htm.java-0.6.4.jar"/>
 	<classpathentry kind="lib" path="build/htm/logback-classic-1.1.2.jar"/>
 	<classpathentry kind="lib" path="build/htm/logback-core-1.1.2.jar"/>
 	<classpathentry kind="lib" path="build/htm/retina-service-java-api-client-2.2.1-jar-with-dependencies.jar"/>
 	<classpathentry kind="lib" path="build/htm/rxjava-1.0.10.jar"/>
 	<classpathentry kind="lib" path="build/htm/slf4j-api-1.7.10.jar"/>
 	<classpathentry kind="lib" path="build/htm/trove-3.1a1.jar"/>
+	<classpathentry kind="lib" path="build/htm/htm.java-0.6.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

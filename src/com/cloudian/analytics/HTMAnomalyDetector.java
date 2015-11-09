@@ -36,7 +36,8 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 	private static final String FULL_DATE = "YYYY/MM/dd HH:mm:ss";
 	static final DateFormat FULL_DATE_FORMAT = new SimpleDateFormat(FULL_DATE);
 	static final DecimalFormat LOG_FORMAT = new DecimalFormat("#.###");
-	static final String CLASSFIER_FIELD = "duration";
+	static final String CLASSFIER_FIELD = "log10_resp";
+	static final int NUMBER_OF_AGGREGATIONS = 30;
 	
 	private final Map<InetAddress, HTM> htmMaps = new HashMap<InetAddress, HTM>();
 	
@@ -79,31 +80,8 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 		}
 		
 		// add
-		String input = generateCSVInput(job);
-		logger.debug("publishing a next input: " + input);
-		htm.publisher.onNext(input);
-		
-	}
-	
-	private static String generateCSVInput(PollingJob job) {
-		
-		StringBuffer sb = new StringBuffer();
-		
-		sb.append(FULL_DATE_FORMAT.format(new Date()));
-		sb.append(CSVUpdateHandler.DELIM);
-		
-		// ~ 10 micro sec = {0.0, 1.0}
-		// ~ 100 micro sec = {1.0, 2.0}
-		// ~ 1 milli sec = {2.0, 3.0}
-		// ~ 10 milli sec = {3.0, 4.0}
-		// ~ 100 milli sec = {4.0, 5.0}
-		// ~ 1 sec = {5.0, 6.0}
-		// ~ 10 sec = {6.0, 7.0}
-		long micro = TimeUnit.MICROSECONDS.convert(job.pollingStatus.duration(), TimeUnit.NANOSECONDS);
-		float log10 = Double.valueOf(Math.log10(micro)).floatValue();
-		sb.append(log10);
-		
-		return sb.toString();
+		logger.debug("pushing job: " + job.toString());
+		htm.push(job);
 		
 	}
 	
@@ -118,7 +96,7 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 	                    .alterParameter(KEY.AUTO_CLASSIFY, Boolean.TRUE)
 	                    .add(Anomaly.create())
 	                    .add(new TemporalMemory())
-	                    //.add(new SpatialPooler())
+	                    .add(new SpatialPooler())
 	                    .add(sensor)
 	                    )
 	                );
@@ -132,11 +110,53 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
 		
 		Map<String, Map<String, Object>> fieldEncodings = getNetworkFieldEncodingMap();
         Parameters p = Parameters.getEncoderDefaultParameters();
+        
+        // CLAClassifier
+        // alpha, hard coded
+        
+        // Spatial Pooler
+        // ? 'columnCount': 2048,
+        p.setParameterByKey(KEY.GLOBAL_INHIBITIONS, true); // 'globalInhibition': 1,
+        // ? 'inputWidth': 0,
+        p.setParameterByKey(KEY.MAX_BOOST, 2.0); // 'maxBoost': 2.0,
+        p.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, 40.0); // 'numActiveColumnsPerInhArea': 40,
+        p.setParameterByKey(KEY.POTENTIAL_PCT, 0.8); // 'potentialPct': 0.8,
+        // ? 'seed': 1956,
+        // 'spVerbosity': 0,
+        // ? 'spatialImp': 'cpp',
+        p.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.05); // 'synPermActiveInc': 0.05,
+        // 'synPermConnected': 0.1,
+        p.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.04216241137734589);// 'synPermInactiveDec': 0.04216241137734589
+        
+        // Temporal Memory Pooler
+        p.setParameterByKey(KEY.ACTIVATION_THRESHOLD, 14); // 'activationThreshold': 14,
+        // 'cellsPerColumn': 32,
+        // 'columnCount': 2048,
+        // ? 'globalDecay': 0.0,
+        // 'initialPerm': 0.21,
+        // ? 'inputWidth': 2048,
+        // ? 'maxAge': 0,
+        // ? 'maxSegmentsPerCell': 128,
+        // ? 'maxSynapsesPerSegment': 32,
+        p.setParameterByKey(KEY.MIN_THRESHOLD, 11); // 'minThreshold': 11,
+        // 'newSynapseCount': 20,
+        // ? 'outputType': 'normal',
+        // ? 'pamLength': 3,
+        // 'permanenceDec': 0.1,
+        // 'permanenceInc': 0.1,
+        // ? 'seed': 1960,
+        // ? 'temporalImp': 'cpp',
+        
         p.setParameterByKey(KEY.FIELD_ENCODING_MAP, fieldEncodings);
         
         return p;
 	}
 	
+	/**
+	 * This configuration is based on various swarming results.
+	 * The sample input file, and its swarming results are in resources/sample folder.
+	 * @return
+	 */
     public static Map<String, Map<String, Object>> getNetworkFieldEncodingMap() {
         Map<String, Map<String, Object>> fieldEncodings = setupMap(
                 null,
@@ -146,13 +166,14 @@ public class HTMAnomalyDetector implements PollingUpdateHandler {
                 "timestamp", "datetime", "DateEncoder");
         fieldEncodings = setupMap(
                 fieldEncodings, 
-                512, 
+                41, 
                 21, 
-                0, 7, 1, 0.1, null, Boolean.TRUE, null, 
+                2.0, 7.0, 1.0, 0.1, null, Boolean.TRUE, null, 
+                // AdaptiveScalarEncoder is suggested by swarming,
+                // but which is not available for this version of htm.java
                 CLASSFIER_FIELD, "float", "ScalarEncoder");
         
-        //fieldEncodings.get("timestamp").put(KEY.DATEFIELD_DOFW.getFieldName(), new Tuple(1, 1.0)); // Day of week
-        fieldEncodings.get("timestamp").put(KEY.DATEFIELD_TOFD.getFieldName(), new Tuple(5, 4.0)); // Time of day
+        fieldEncodings.get("timestamp").put(KEY.DATEFIELD_DOFW.getFieldName(), new Tuple(21, 3.514898609719035)); // Day of week
         fieldEncodings.get("timestamp").put(KEY.DATEFIELD_PATTERN.getFieldName(), FULL_DATE);
         
         return fieldEncodings;
@@ -218,11 +239,72 @@ class HTM extends Subscriber<Inference>{
 	final InetAddress address;
 	final Network network;
 	final Publisher publisher;
+	private long maxDuration = 0;
+	private int passed = 0;
 	
 	public HTM(InetAddress address, Network network, Publisher publisher) {
 		this.address = address;
 		this.network = network;
 		this.publisher = publisher;
+	}
+	
+	void push(PollingJob job) {
+		
+		long duration = job.pollingStatus.duration();
+		
+		if (this.passed == 0) {
+			
+			// new
+			this.maxDuration = duration;
+			this.passed++;
+			
+		} else if (this.maxDuration < duration){
+			
+			// lost
+			this.maxDuration = duration;
+			this.passed++;
+			
+		} else {
+			
+			// won
+			this.passed++;
+			
+			if (this.passed == HTMAnomalyDetector.NUMBER_OF_AGGREGATIONS) {
+				
+				this.publish();
+				this.maxDuration = 0;
+				this.passed = 0;
+				
+			}
+			
+		}
+		
+		HTMAnomalyDetector.logger.debug("a job was pushed, the current maxDuration, won = " + this.maxDuration + ", " + this.passed);
+		
+	}
+	
+	private void publish() {
+		
+		StringBuffer sb = new StringBuffer();
+		
+		sb.append(HTMAnomalyDetector.FULL_DATE_FORMAT.format(new Date()));
+		sb.append(CSVUpdateHandler.DELIM);
+		
+		// ~ 10 micro sec = {0.0, 1.0}
+		// ~ 100 micro sec = {1.0, 2.0}
+		// ~ 1 milli sec = {2.0, 3.0}
+		// ~ 10 milli sec = {3.0, 4.0}
+		// ~ 100 milli sec = {4.0, 5.0}
+		// ~ 1 sec = {5.0, 6.0}
+		// ~ 10 sec = {6.0, 7.0}
+		long micro = TimeUnit.MICROSECONDS.convert(this.maxDuration, TimeUnit.NANOSECONDS);
+		float log10 = Double.valueOf(Math.log10(micro)).floatValue();
+		sb.append(log10);
+		
+		String input = sb.toString();
+		HTMAnomalyDetector.logger.debug("publishing a next input: " + input);
+		publisher.onNext(input);
+		
 	}
 
 	@Override
