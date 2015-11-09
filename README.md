@@ -17,7 +17,7 @@ This tool is the one you look for if the following problems apply to you:
 A PING response time contains the following information:
 
 1. a load on a sender server
-2. netowrk congestion
+2. a network congestion
 3. a load on a recipient server
 4. any other noises
 
